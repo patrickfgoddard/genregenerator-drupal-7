@@ -1,0 +1,165 @@
+<?php
+
+/**
+ * @file
+ * This module provides a block and page 
+ * displaying a randomly generated music genre.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function genregenerator_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#genregenerator':
+      return t('Add the block anywhere on your site, or create a menu item to "genre" to view full page');
+  }
+}
+
+
+/**
+ * Implements hook_menu().
+ */
+function genregenerator_menu() {
+  $items['genre'] = array(
+    'title' => 'Your Band\'s Genre Is:',
+    'page callback' => 'genregenerator_page',
+    'access arguments' => array('access content'),
+  );
+  $items['genregenerator.json'] = array(
+    'title' => 'Genregenerator AJAX Gateway',
+    'page callback' => 'genregenerator_item',
+    'access arguments' => array('access content'),
+    'type' => MENU_CALLBACK,
+  );
+
+  return $items;
+}
+
+
+/**
+ * Implements hook_block_info().
+ */
+function genregenerator_block_info() {
+  // TODO Rename block deltas (e.g. delta-0) to readable strings.
+  $blocks['delta-0']['info'] = t('Random Genre Generator');
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function genregenerator_block_view($delta) {
+  $content = _genregenerator_get_genre();
+  $block['subject'] = t('Genre');
+  $block['content'] = check_plain($content);
+
+  return $block;
+}
+
+/**
+ * Implements hook_theme().
+ */
+function genregenerator_theme($existing, $type, $theme, $path) {
+  return array(
+    'genregenerator_genre' => array(
+      'variables' => array('genre' => NULL),
+    ),
+   /* 'page' => array(
+      'template' => 'page-genre',
+      'variables' => array(
+        'content' => NULL,
+        'show_blocks' => TRUE,
+        'show_messages' => TRUE,
+      ),
+    ),
+  */
+  );
+}
+
+/**
+ * Theme function for theming hooks
+ *
+ * @param $text
+ *   The quote content, as a string.
+ *
+ * @param $origin
+ *   The original source of the quote, as a string.
+ * @return
+ *   An HTML themed string.
+ */
+
+/**
+ * Returns html for display of randomly-generated genre.
+ * 
+ * @param $variables
+ *
+ *   An associative array containing:
+ *   - genre: Generated genre.
+ */
+function theme_genregenerator_genre($variables) {
+  $genre = $variables['genre'];
+  $module_path = drupal_get_path('module', 'genregenerator');
+  drupal_add_css($module_path . '/genregenerator.css');
+  drupal_add_js($module_path . '/genregenerator.js');
+  $opts = array('absolute' => TRUE);
+  // TODO The second parameter to this function call should be an array.
+  $json_url = url('genregenerator.json', $opts);
+  drupal_add_js(
+    array(
+      'genregenerator' => array(
+        'json_url' => $json_url,
+        'base_url' => $GLOBALS['base_url']
+      ),
+    ), 
+    array('type' => 'setting', 'scope' => JS_DEFAULT));
+  $output = '<div id="genregenerator-genre"><p>' . $genre . '</p></div>';
+  $output .= '<div id="genre-tweet"><a href="http://twitter.com/share" class="twitter-share-button" data-url="' . $GLOBALS['base_url'] . '"/genre" data-text="Generate a cool, new genre for your band. " data-count="vertical" data-via="patrickfgoddard">Tweet</a><script type="text/javascript" src="http://platform.twitter.com/widgets.js"></script></div>';
+  return $output;
+}
+
+/**
+ * Returns a randomly generated genre.
+ */
+function _genregenerator_get_genre() {
+  $genre_descriptors = array("transgender", "afro", "down-tempo", "gamewave", "gamelan", "death", "black", "pagan", "gothic", "alternative", "funk", "progressive", "drone", "crust", "free-form", "industrial", "nu", "sludge", "garage", "goa", "grime", "horror", "indie", "irish", "jam", "fusion", "Jawaiian", "jig", "jug", "k-pop", "kubuki", "kiwi", "kinky", "Kwaito", "latin", "lo-fi", "light", "lounge", "Louisiana", "memphis", "detroit", "west coast", "east coast", "down tempo", "Luk grunge", "mambo", "mandarin", "marimba", "math", "medieval", "melodic", "pop-punk", "noise", "Merengue", "mexican", "post", "miami", "Minstrel", "minimalist", "modern", "motown", "nardcore", "nashville", "neo", "new age", "no age", "house", "romantic", "old time", "oldies", "obscuro", "avante garde", "operatic", "organic", "outlaw", "parody", "peace", "piano", "poco-poco", "porno", "power", "Psychedelic", "psych", "raga", "ragtime", "Reggae", "retro", "roots", "sad", "slow", "uptempo", "sacred", "saya", "country", "western", "shock", "scum", "smooth", "yacht rock", "slack-key", "soft", "southern", "spiritual", "space", "stoner", "desert", "surf", "swamp", "symphonic", "synth", "technoid", "thrash", "texas", "teen", "tibetan", "traditional", "trip-hop", "twee", "two-tone", "urban", "underground", "viking", "world", "hard", "street");
+  $genre_toplevel = array("rock", "metal", "folk", "blues", "jazz", "pop", "hip hop", "core", "psychobilly", "techno", "polka", "trance", "funk", "rock en espanol", "rumba", "gospel", "salsa", "samba", "screamo", "country", "shoegaze", "ska", "speedcore", "soul", "tango", "tumba", "waltz", "zydeco");
+
+  $output = '';
+  $descriptors = '';
+  $toplevel = '';
+
+  // Get the adjectives.
+  $toplevel = $genre_toplevel[array_rand($genre_toplevel)];
+  $genre_descriptors_rand_array = array_rand($genre_descriptors, 4);
+  shuffle($genre_descriptors_rand_array);
+  foreach ($genre_descriptors_rand_array as $key => $value) {
+    $descriptors .= ucfirst($genre_descriptors[$value]) . ' ';
+  }
+
+  $output = check_plain($descriptors . ' ' . ucfirst($toplevel));
+
+  return $output;
+}
+
+/**
+ * Returns output for page.
+ */
+function genregenerator_page() {
+  $randomgenre = _genregenerator_get_genre();
+  $output = $randomgenre;
+  $output = theme('genregenerator_genre', array('genre' => check_plain($randomgenre)));
+  return $output;
+}
+
+/**
+ * TO DO: add description.
+ */
+function genregenerator_item() {
+  $item = _genregenerator_get_genre();
+  drupal_add_http_header('Content-Type', 'text/plain; charset');
+  printf(
+    '{ "genre": "%s"}',
+    $item
+  );
+}
